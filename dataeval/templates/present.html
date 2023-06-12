@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Present selection</title>
+    <style>
+        .container{
+            padding-left: 50px;
+            padding-right: 50px;
+            display: grid;
+            align-items: center;
+            grid-template-columns: auto auto;
+            gap: 10px;
+        }
+        .navbar-right{
+            text-align: right;
+            padding-top: 20px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid black;
+            grid-column: 2;
+            grid-row: 1;
+        }
+        .navbar-left{
+            text-align: left;
+            padding-top: 20px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid black;
+            grid-column: 1;
+            grid-row: 1;
+        }
+        .report{
+            grid-column: 1 / span 2;
+            grid-row: 2;
+            margin-bottom: 30px;
+        }
+        .item{
+            border: 1px solid black;
+            text-align: center;
+            font-size: 15px;
+            padding: 20px;
+        }
+        .item:hover{
+            border: 2px solid red;
+        }
+
+        .item.selected {
+            border: 2px solid green;
+        }
+
+        .rank{
+            padding-top: 10px;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid black;
+        }
+    </style>
+    <script type="application/javascript">
+        let counter = [1, 2, 3, 4]
+        window.addEventListener("DOMContentLoaded", function (){
+            let boxes = document.querySelectorAll(".item")
+            Array.from(boxes, function (box) {
+                box.addEventListener("click", function (){
+                    if (box.classList.contains("selected")){
+                        box.classList.remove("selected")
+                        counter.push(parseInt(box.firstChild.innerHTML))
+                        if (counter.length > 0){
+                            document.querySelector("#next-btn").disabled = true
+                        }
+                        box.firstChild.innerHTML = "CLICK TO SELECT ORDER"
+
+                    } else {
+                        box.classList.add("selected")
+                        counter.sort(function (a, b) {
+                            return b-a
+                        })
+                        let val = counter.pop();
+                        if (counter.length == 0)
+                        {
+                            document.querySelector("#next-btn").disabled = false
+                        }
+                        box.firstChild.innerHTML = val
+                    }
+                })
+            })
+
+            document.querySelector("#next-btn").addEventListener("click", function () {
+                let rank = {}
+                Array.from(boxes, function (box) {
+                    rank[box.id] = box.firstChild.innerHTML
+                })
+                let response = {}
+                response[{{ questionid }}] = rank
+                const dataToSend = JSON.stringify(response)
+                fetch('/eval/results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':'application/json'
+                    },
+                    body:  dataToSend
+                })
+                .then(window.location.href='/eval/present/{{ nextquestionid }}')
+            })
+        })
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="navbar-right"><button id="next-btn" disabled="True">Next</button></div>
+    <div class="navbar-left"><button id="abort-btn">Abort</button></div>
+    <div class="report">{{ report }}</div>
+    <div id="{{ item1.id }}" class="item"><div class="rank">CLICK TO SELECT ORDER</div>{{ item1.text }}</div>
+    <div id="{{ item2.id }}" class="item"><div class="rank">CLICK TO SELECT ORDER</div>{{ item2.text }}</div>
+    <div id="{{ item3.id }}" class="item"><div class="rank">CLICK TO SELECT ORDER</div>{{ item3.text }}</div>
+    <div id="{{ item4.id }}" class="item"><div class="rank">CLICK TO SELECT ORDER</div>{{ item4.text }}</div>
+</div>
+</body>
+</html>
