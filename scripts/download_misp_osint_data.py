@@ -1,5 +1,5 @@
 misp_url = 'https://misppriv.circl.lu'
-misp_key = ''
+misp_key = 'Ed3SPrTIyQoYYoW2rtRXv8zYyRV76qk3v84RHEG9'
 misp_verifycert = True
 
 from pymisp import ExpandedPyMISP

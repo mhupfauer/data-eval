@@ -4,7 +4,7 @@ import math
 import nltk
 from gradio_client import Client
 
-client = Client("")
+client = Client("https://5560532b59172289d2.gradio.live/")
 
 def SplitAndRequest(text, task, lim):
     required_slices = math.ceil(len(text) / lim)
@@ -53,20 +53,25 @@ with open('summary-data.CSV', 'r') as f:
     next(reader)
 
     for r in reader:
-        summary = SplitAndRequest(r[2], "You will be given individual parts of an IT-Security report to summarize. Keep your response short and include the all important information like the threat actors, attack vectors and potential targets. Exclude general informations and reccomendations", 1500)
-        while len(summary) > 1900:
-            summary = SplitAndRequest(summary, "You will be given individual parts of an IT-Security report to summarize. Keep your response short while including the all important information but exclude general informations and reccomendations.", 1500)
+        print("###########\nNEW REPORT: %s\nURL: %s" % (r[1], r[0]))
+        command = "Generate a summary of the partial IT-Security Report given below. Include all relevant information contained in the report including but not limited to threat actor, attack vector and potential targets. Do not make up information that is not explicitly stated within the report. "
+        summary = SplitAndRequest(r[2], command, 1200)
+        counter = 0
+        print("LENGTH AFTER SUMMARY 1: %i" % len(summary))
+        while len(summary) > 1829:
+            summary = SplitAndRequest(summary, command, 1000)
+            counter = counter + 1
+            print("LENGHT AFTER %ith summarization is: %i" % (counter, len(summary)))
 
-        query = """You will be given several partial summaries of the a report to summarize them into one coherent summary. Include all important information contained within the summaries.
+        query = """Generate a IT-Security report based upon the information given below. Make sure to include ALL the provided information and do not exclude any information.
 
-Summaries:
+Information:
 %s
 
-Summary:
-""" % summary
+Summary""" % summary
         result = client.predict(
             query,
-            2048,
+            len(query)+2048,
             api_name="/predict"
         )
 
