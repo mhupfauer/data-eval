@@ -4,7 +4,9 @@ import math
 import nltk
 from gradio_client import Client
 
-client = Client("https://5560532b59172289d2.gradio.live/")
+nltk.download('popular')
+
+client = Client("https://4ab1aac92e43b48920.gradio.live/")
 
 def SplitAndRequest(text, task, lim):
     required_slices = math.ceil(len(text) / lim)
@@ -31,13 +33,17 @@ Report:
 
 Summary:
     """ % (task, s)
-        result = client.predict(
-            query,
-            len(query) + 500,
-            api_name="/predict"
-        )
+        try:
+            result = client.predict(
+                query,
+                len(query) + 500,
+                api_name="/predict"
+            )
 
-        summaries.append(result.split("Summary:")[1])
+            summaries.append(result.split("Summary:")[1])
+        except Exception as e:
+            print("ERROR in INTERMIDIATE SUMMARIZATION TASK")
+            summaries.append("")
 
     return ' '.join(summaries)
 
@@ -46,7 +52,7 @@ with open ('responses.csv', 'w', encoding='UTF-8') as w:
     writer = csv.writer(w, delimiter=';')
     writer.writerow(['URL','TITLE','RAW','SUMMARY','LANG','DATE'])
 
-with open('summary-data.CSV', 'r') as f:
+with open('summary-data.CSV', 'r', encoding='UTF-8') as f:
     reader = csv.reader(f, delimiter=';')
 
     #Skip header
@@ -63,26 +69,12 @@ with open('summary-data.CSV', 'r') as f:
             counter = counter + 1
             print("LENGHT AFTER %ith summarization is: %i" % (counter, len(summary)))
 
-        query = """Generate a IT-Security report based upon the information given below. Make sure to include ALL the provided information and do not exclude any information.
-
-Information:
-%s
-
-Summary""" % summary
-        result = client.predict(
-            query,
-            len(query)+2048,
-            api_name="/predict"
-        )
-
-        print(result.split("Summary:")[1])
-
-        raw_len = len(r[2])
-        summary_len = len(summary)
-
         with open('responses.csv', 'a', encoding='UTF-8') as w:
             writer = csv.writer(w, delimiter=';')
-            writer.writerow([r[0], r[1], r[2], result.split("Summary:")[1].replace('\n',''), r[3], r[4]])
-
+            writer.writerow([r[0], r[1], r[2].replace(';',','), summary.replace('\t','').replace('\n', ' '), r[3], r[4]])
+            
+        raw_len = len(r[2])
+        summary_len = len(summary)
+        
         print("""RAW LEN: %i
 SUMMARY LEN: %i""" % (raw_len, summary_len))
