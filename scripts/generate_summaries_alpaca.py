@@ -1,13 +1,14 @@
 import csv
 import math
 import re
+import unidecode
 
 import nltk
 from gradio_client import Client
 
 nltk.download('popular', quiet=True)
 
-client = Client("https://XXXXXXXXXX.gradio.live/")
+client = Client("http://10.20.62.95:7860/")
 
 
 def SplitAndRequest(text, task, lim):
@@ -45,7 +46,7 @@ def SplitAndRequest(text, task, lim):
 
             summaries.append(result)
         except Exception as e:
-            print("ERROR in INTERMIDIATE SUMMARIZATION TASK:%s" % e)
+            print("ERROR in INTERMEDIATE SUMMARIZATION TASK:%s" % e)
             summaries.append("")
 
     return ' '.join(summaries)
@@ -74,56 +75,51 @@ with open('summary-data.CSV', 'r', encoding='UTF-8') as f:
 
         deltasummaries = False
 
+        r[2] = unidecode.unidecode(r[2])
         r[2] = r[2].replace("#", "")
-        r[2] = re.sub("\-{3,}", "", r[2])
-        r[2] = re.sub("[a-z0-9]{32,}", "", r[2])
-        r[2] = re.sub("[A-Za-z0-9\-]{3,253}\[?\.\]?(?:org|com|net|tk|biz|de|io)", "", r[2])
-        r[2] = r[2].replace("@","").replace("[", "").replace("]", "").replace("{", "").replace("}", "")
+        r[2] = re.sub("\_{3,}", "", r[2])
 
+        inputtext = r[2]
 
-        if len(r[2]) > 5000:
+        if len(inputtext) > 5000:
             print("Splitting...")
-            inputtext = SplitAndRequest(r[2], command, 4000)
+            inputtext = SplitAndRequest(inputtext, command, 4000)
             deltasummaries = True
-            print("DELTA SUMMARIES:\n%s" % r[2])
-        else:
-            inputtext = r[2]
+            print("DELTA SUMMARIES:\n%s" % inputtext)
 
 
-        while len(summary) <= 1000:
-            Errors = True
-            try:
-                while Errors:
-                    summary = client.predict(
-                        command,
-                        inputtext,
-                        temp,
-                        topp,
-                        topk,
-                        4,
-                        400,
-                        False,
-                        api_name="/predict"
-                    )
-                    Errors = False
-            except Exception as e:
-                print("ERROR in SUMMARIZATION TASK: %s" % e)
+        Errors = True
+        try:
+            while Errors:
+                summary = client.predict(
+                    command,
+                    inputtext,
+                    temp,
+                    topp,
+                    topk,
+                    4,
+                    400,
+                    False,
+                    api_name="/predict"
+                )
+                Errors = False
+        except Exception as e:
+            print("ERROR in SUMMARIZATION TASK: %s" % e)
 
-            if len(summary) <= 500:
-                print("Could not generate long enough summary. If there has been a delta summary we take this as overall summary")
-                if deltasummaries:
-                    print("Delta summary found... Taking this as overall summary")
-                    summary = inputtext
-                else:
-                    print("Delta summary not found. Shit.")
-                    summary = "NOPE"
+        if len(summary) <= 500:
+            print("Could not generate long enough summary. If there has been a delta summary we take this as overall summary")
+            if deltasummaries:
+                print("Delta summary found... Taking this as overall summary")
+                summary = inputtext
+            else:
+                print("Delta summary not found. Shit.")
+                summary = "NOPE"
 
         print("OVERALL SUMMARY:\n%s" % summary)
 
         with open('responses-alpaca.csv', 'a', encoding='UTF-8') as w:
             writer = csv.writer(w, delimiter=';')
-            writer.writerow(
-                [r[0], r[1], r[2].replace(';', ','), summary.replace('\t', '').replace('\n', ' '), r[3], r[4]])
+            writer.writerow([r[0], r[1], r[2].replace(';', ','), summary.replace('\t', '').replace('\n', ' '), r[3], r[4]])
 
         raw_len = len(r[2])
         summary_len = len(summary)
